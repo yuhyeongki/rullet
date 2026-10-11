@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교실 발표 & 모둠 뽑기 룰렛</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      user-select: none;
+    }
+    .font-jua {
+      font-family: 'Jua', sans-serif;
+    }
+    /* 룰렛 바늘 펄스 애니메이션 */
+    @keyframes pointer-wiggle {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(3px) rotate(-4deg); }
+    }
+    .pointer-active {
+      animation: pointer-wiggle 0.08s ease infinite;
+    }
+    /* 부드러운 스크롤바 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col overflow-x-hidden selection:bg-amber-400 selection:text-slate-900">
+
+  <!-- Top Navigation & Header -->
+  <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-30 px-4 py-3 sm:px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <i class="fa-solid fa-dharmachakra text-white text-xl animate-spin" style="animation-duration: 8s;"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black font-jua text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-300 to-rose-400">
+            신나는 교실 룰렛
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">발표자 뽑기 • 모둠 정하기 • 퀴즈 찬스 추첨</p>
+        </div>
+      </div>
+
+      <!-- Quick Controls -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Sound Toggle -->
+        <button id="soundToggleBtn" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-sm font-medium transition shadow-sm" title="효과음 켜기/끄기">
+          <i id="soundIcon" class="fa-solid fa-volume-high text-amber-400"></i>
+          <span class="text-xs hidden md:inline">소리</span>
+        </button>
+
+        <!-- Fullscreen Button -->
+        <button id="fullscreenBtn" class="p-2 sm:px-3 sm:py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 border border-slate-600 text-sm font-medium transition" title="전체화면">
+          <i class="fa-solid fa-expand text-slate-300"></i>
+          <span class="text-xs hidden md:inline ml-1">전체화면</span>
+        </button>
+
+        <!-- Toggle Panel for Mobile -->
+        <button id="panelToggleBtn" class="lg:hidden px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-sm transition flex items-center space-x-1 shadow-md">
+          <i class="fa-solid fa-sliders"></i>
+          <span>설정</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    
+    <!-- Roulette Main Center Section (Large Centerpiece) -->
+    <section class="lg:col-span-8 flex flex-col items-center justify-center bg-slate-800/40 rounded-3xl p-4 sm:p-8 border border-slate-700/50 relative shadow-2xl overflow-hidden min-h-[500px]">
+      
+      <!-- Center Glow Background -->
+      <div class="absolute w-[450px] h-[450px] bg-amber-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+      
+      <!-- Roulette Container -->
+      <div class="relative w-full max-w-[560px] aspect-square flex items-center justify-center p-2 sm:p-4">
+        
+        <!-- Top Pointer Indicator -->
+        <div id="wheelPointer" class="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center pointer-events-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)] transition-transform duration-75">
+          <div class="w-8 h-8 rounded-full bg-rose-600 border-4 border-white shadow-md flex items-center justify-center">
+            <div class="w-2.5 h-2.5 rounded-full bg-white"></div>
+          </div>
+          <div class="w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-rose-600 -mt-1.5"></div>
+        </div>
+
+        <!-- Canvas for the Wheel -->
+        <canvas id="wheelCanvas" class="w-full h-full rounded-full shadow-[0_0_40px_rgba(0,0,0,0.6)] cursor-pointer"></canvas>
+
+        <!-- Center Spin Button -->
+        <button id="spinBtn" class="absolute z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 text-white font-black font-jua text-2xl sm:text-3xl tracking-wider shadow-[0_0_25px_rgba(244,63,94,0.6)] border-4 border-white/90 hover:scale-105 active:scale-95 transition transform duration-150 flex flex-col items-center justify-center group">
+          <span>돌려!</span>
+          <span class="text-[10px] font-sans font-medium text-amber-100 opacity-90 -mt-1 group-hover:tracking-wider transition-all">클릭/스페이스</span>
+        </button>
+      </div>
+
+      <!-- Quick Action Bar under Wheel -->
+      <div class="mt-6 flex flex-wrap items-center justify-center gap-3 w-full max-w-lg z-10">
+        <button id="shuffleBtn" class="px-4 py-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 border border-slate-600/80 text-sm font-medium text-slate-200 transition flex items-center space-x-2 active:scale-95">
+          <i class="fa-solid fa-shuffle text-amber-400"></i>
+          <span>순서 섞기</span>
+        </button>
+        <button id="resetHistoryBtn" class="px-4 py-2 rounded-xl bg-slate-700/80 hover:bg-slate-700 border border-slate-600/80 text-sm font-medium text-slate-200 transition flex items-center space-x-2 active:scale-95">
+          <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i>
+          <span>기록 초기화</span>
+        </button>
+        <div class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-700/70 text-xs">
+          <input type="checkbox" id="autoRemoveCheckbox" class="w-4 h-4 rounded text-rose-500 bg-slate-800 border-slate-600 focus:ring-rose-500 focus:ring-offset-slate-900 cursor-pointer">
+          <label for="autoRemoveCheckbox" class="cursor-pointer font-semibold text-amber-300">
+            당첨자 자동 제외 (중복 방지)
+          </label>
+        </div>
+      </div>
+
+      <!-- Current Count Badge -->
+      <div class="mt-3 text-xs text-slate-400 font-medium">
+        현재 후보: <span id="candidateCount" class="text-amber-400 font-bold">0</span>명 / 총 당첨: <span id="winnerCount" class="text-emerald-400 font-bold">0</span>회
+      </div>
+    </section>
+
+    <!-- Sidebar: Student Management, Presets, and Winner History -->
+    <aside id="sidebarPanel" class="lg:col-span-4 flex flex-col space-y-4">
+      
+      <!-- Preset & Student Editor Card -->
+      <div class="bg-slate-800/70 rounded-3xl p-5 border border-slate-700/60 shadow-xl flex flex-col flex-1">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+          <h2 class="font-jua text-lg text-amber-300 flex items-center space-x-2">
+            <i class="fa-solid fa-users text-amber-400"></i>
+            <span>학생 / 항목 목록</span>
+          </h2>
+          <!-- Preset Dropdown -->
+          <select id="presetSelect" class="bg-slate-900 text-xs rounded-lg px-2.5 py-1.5 border border-slate-600 text-slate-300 focus:outline-none focus:border-amber-400">
+            <option value="custom">-- 프리셋 선택 --</option>
+            <option value="numbers20">1번 ~ 20번</option>
+            <option value="numbers25">1번 ~ 25번</option>
+            <option value="groups">모둠 (1~6모둠)</option>
+            <option value="tasks">수업 미션/벌칙</option>
+            <option value="sampleNames">예시 학생 이름</option>
+          </select>
+        </div>
+
+        <!-- Textarea for Items -->
+        <div class="mt-3 flex-1 flex flex-col">
+          <label for="itemsInput" class="text-xs text-slate-400 mb-1.5 flex justify-between">
+            <span>한 줄에 한 명씩 입력하세요:</span>
+            <span id="charCountNotice" class="text-slate-500">엔터로 구분</span>
+          </label>
+          <textarea id="itemsInput" rows="7" class="w-full flex-1 p-3 bg-slate-900/90 text-slate-100 rounded-xl border border-slate-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-mono text-sm resize-none focus:outline-none" placeholder="학생 이름을 입력하세요&#10;예:&#10;김민준&#10;이서연&#10;박도윤&#10;정하은"></textarea>
+          
+          <button id="applyItemsBtn" class="mt-2.5 w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold text-sm shadow-md transition active:scale-[0.98] flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>목록 룰렛에 적용하기</span>
+          </button>
+        </div>
+
+        <!-- History Record Container -->
+        <div class="mt-5 pt-4 border-t border-slate-700/60">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+              <i class="fa-solid fa-trophy text-yellow-400"></i>
+              <span>당첨 기록 (<span id="historyNum">0</span>)</span>
+            </h3>
+            <button id="clearHistoryBtn" class="text-[11px] text-rose-400 hover:text-rose-300 underline">
+              비우기
+            </button>
+          </div>
+          <div id="historyList" class="max-h-36 overflow-y-auto space-y-1.5 pr-1 text-xs">
+            <div class="text-slate-500 text-center py-4 italic">아직 당첨된 학생이 없습니다.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Celebration Confetti Overlay Canvas -->
+  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- Fanfare Stage Animated Elements -->
+  <div id="fanfareStage" class="fixed inset-0 pointer-events-none z-50 overflow-hidden hidden">
+    <!-- Left Trumpet Horn -->
+    <div id="leftHorn" class="absolute bottom-16 sm:bottom-24 -left-36 transition-all duration-700 ease-out transform -rotate-12 flex items-center drop-shadow-[0_10px_25px_rgba(245,158,11,0.6)]">
+      <div class="text-7xl sm:text-9xl filter drop-shadow-lg select-none transform rotate-45 scale-x-[-1]">🎺</div>
+      <div class="space-y-1 -ml-4 flex flex-col items-start animate-pulse">
+        <span class="text-4xl sm:text-5xl">✨</span>
+        <span class="text-3xl sm:text-4xl">🎵</span>
+      </div>
+    </div>
+
+    <!-- Right Trumpet Horn -->
+    <div id="rightHorn" class="absolute bottom-16 sm:bottom-24 -right-36 transition-all duration-700 ease-out transform rotate-12 flex items-center drop-shadow-[0_10px_25px_rgba(245,158,11,0.6)]">
+      <div class="space-y-1 -mr-4 flex flex-col items-end animate-pulse">
+        <span class="text-3xl sm:text-4xl">🎶</span>
+        <span class="text-4xl sm:text-5xl">✨</span>
+      </div>
+      <div class="text-7xl sm:text-9xl filter drop-shadow-lg select-none transform -rotate-45">🎺</div>
+    </div>
+
+    <!-- Top Ribbon & Star Burst Banner -->
+    <div id="fanfareBanner" class="absolute top-8 left-1/2 -translate-x-1/2 opacity-0 -translate-y-12 transition-all duration-500 ease-out flex items-center justify-center space-x-3 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-500 text-white font-black font-jua text-2xl sm:text-4xl px-8 py-3 rounded-full shadow-[0_0_40px_rgba(244,63,94,0.8)] border-4 border-yellow-200">
+      <span class="animate-bounce">🎺</span>
+      <span class="tracking-widest drop-shadow-md">🎉 빰빠카빰! 당첨! 빵빠레! 🎊</span>
+      <span class="animate-bounce" style="animation-delay: 0.15s;">🎺</span>
+    </div>
+  </div>
+
+  <!-- Winner Modal -->
+  <div id="winnerModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+    <div id="modalBox" class="bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-amber-400/80 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.3)] transform scale-90 transition-all duration-300 relative overflow-hidden">
+      
+      <!-- Sparkle Icons Background -->
+      <i class="fa-solid fa-star text-amber-400/20 text-6xl absolute -top-4 -left-4 animate-spin" style="animation-duration: 20s;"></i>
+      <i class="fa-solid fa-crown text-yellow-400/20 text-6xl absolute -bottom-4 -right-4"></i>
+
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border border-amber-400 flex items-center justify-center text-amber-300 text-3xl mb-3 shadow-inner">
+        🎉
+      </div>
+
+      <p class="text-sm font-semibold text-amber-300 uppercase tracking-wider mb-1">축하합니다!</p>
+      <h3 class="text-xs text-slate-400 mb-3">이번 차례 당첨자</h3>
+
+      <div id="winnerNameDisplay" class="font-jua text-4xl sm:text-5xl text-white font-black py-4 px-3 bg-slate-950/60 rounded-2xl border border-slate-700/80 shadow-md break-all my-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-rose-300">
+        김민준
+      </div>
+
+      <p id="winnerAutoRemovedNote" class="text-xs text-rose-300/90 mt-2 font-medium hidden">
+        <i class="fa-solid fa-circle-minus mr-1"></i>다음 룰렛에서 자동으로 제외되었습니다.
+      </p>
+
+      <div class="mt-6 flex items-center justify-center space-x-3">
+        <button id="modalCloseBtn" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-slate-950 font-black font-jua text-lg shadow-lg active:scale-95 transition">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Toast Component -->
+  <div id="toastBox" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-amber-300 border border-amber-500/50 px-5 py-2.5 rounded-full shadow-2xl text-xs sm:text-sm font-semibold flex items-center space-x-2 opacity-0 pointer-events-none transition-all duration-300">
+    <i class="fa-solid fa-circle-info"></i>
+    <span id="toastMessage">안내 메시지</span>
+  </div>
+
+  <script>
+    /* Web Audio API Sound Generator (No external MP3 files needed) */
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTick() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(500 + Math.random() * 200, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(150, this.ctx.currentTime + 0.04);
+
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.05);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      playFanfare() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        try {
+          // C Major Bright Triumphant Fanfare Melody (Tadaaa!)
+          const melody = [
+            { f: 523.25, time: 0.00, dur: 0.12 }, // C5
+            { f: 523.25, time: 0.13, dur: 0.12 }, // C5
+            { f: 523.25, time: 0.26, dur: 0.14 }, // C5
+            { f: 659.25, time: 0.42, dur: 0.35 }, // E5
+            { f: 523.25, time: 0.80, dur: 0.14 }, // C5
+            { f: 659.25, time: 0.96, dur: 0.16 }, // E5
+            { f: 783.99, time: 1.14, dur: 0.70 }, // G5 (Crescendo Peak!)
+            { f: 1046.50, time: 1.22, dur: 0.85 } // C6 (Octave Blast!)
+          ];
+
+          melody.forEach(note => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const startTime = this.ctx.currentTime + note.time;
+
+            // Brass-like sawtooth wave with warmth
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(note.f, startTime);
+
+            // Brass envelope: sharp attack, bright hold, gentle decay
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.3, startTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + note.dur);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(startTime);
+            osc.stop(startTime + note.dur + 0.05);
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
+    const sfx = new SoundFX();
+
+    // Distinct vibrant color palette for classroom visibility
+    const WHEEL_COLORS = [
+      '#EF4444', // Red
+      '#F97316', // Orange
+      '#F59E0B', // Amber
+      '#10B981', // Emerald
+      '#06B6D4', // Cyan
+      '#3B82F6', // Blue
+      '#6366F1', // Indigo
+      '#8B5CF6', // Purple
+      '#EC4899', // Pink
+      '#14B8A6', // Teal
+      '#84CC16', // Lime
+      '#E11D48', // Rose
+    ];
+
+    // Presets Definition
+    const PRESETS = {
+      numbers20: Array.from({ length: 20 }, (_, i) => `${i + 1}번`),
+      numbers25: Array.from({ length: 25 }, (_, i) => `${i + 1}번`),
+      groups: ['1모둠 🌟', '2모둠 🚀', '3모둠 🍀', '4모둠 🎯', '5모둠 🦁', '6모둠 🌈'],
+      tasks: ['발표하기 🎤', '칠판 지우기 🧽', '간식 찬스 🍬', '자유 질문권 🙋', '선생님 칭찬 👏', '하이파이브 ✋', '보너스 1점 ⭐️'],
+      sampleNames: ['김민준', '이서연', '박도윤', '정하은', '최지호', '윤지우', '강현우', '한수아', '임시우', '조예준', '송채원', '오민재']
+    };
+
+    // State Variables
+    let items = [...PRESETS.sampleNames];
+    let isSpinning = false;
+    let currentAngle = 0; // Current rotation in radians
+    let spinVelocity = 0;
+    let lastTickIndex = -1;
+    let winnerHistory = [];
+
+    // DOM Elements
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinBtn = document.getElementById('spinBtn');
+    const pointer = document.getElementById('wheelPointer');
+    const itemsInput = document.getElementById('itemsInput');
+    const applyItemsBtn = document.getElementById('applyItemsBtn');
+    const presetSelect = document.getElementById('presetSelect');
+    const autoRemoveCheckbox = document.getElementById('autoRemoveCheckbox');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const resetHistoryBtn = document.getElementById('resetHistoryBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const historyList = document.getElementById('historyList');
+    const historyNum = document.getElementById('historyNum');
+    const candidateCount = document.getElementById('candidateCount');
+    const winnerCount = document.getElementById('winnerCount');
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const winnerModal = document.getElementById('winnerModal');
+    const modalBox = document.getElementById('modalBox');
+    const winnerNameDisplay = document.getElementById('winnerNameDisplay');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const winnerAutoRemovedNote = document.getElementById('winnerAutoRemovedNote');
+    const toastBox = document.getElementById('toastBox');
+    const toastMessage = document.getElementById('toastMessage');
+
+    // High DPI Canvas Resizing
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      drawWheel();
+    }
+
+    // Draw the Roulette Wheel
+    function drawWheel() {
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(centerX, centerY) - 10;
+
+      ctx.clearRect(0, 0, width, height);
+
+      if (items.length === 0) {
+        // Empty placeholder state
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#475569';
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 18px "Noto Sans KR"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('항목을 추가해주세요!', centerX, centerY);
+        ctx.restore();
+        return;
+      }
+
+      const sliceAngle = (2 * Math.PI) / items.length;
+
+      // Draw Outer Golden Rim
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius + 4, 0, 2 * Math.PI);
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw Slices
+      for (let i = 0; i < items.length; i++) {
+        const startAngle = currentAngle + i * sliceAngle;
+        const endAngle = startAngle + sliceAngle;
+        const color = WHEEL_COLORS[i % WHEEL_COLORS.length];
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#0f172a';
+        ctx.stroke();
+
+        // Draw Text inside slice
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + sliceAngle / 2);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+
+        // Adaptive Font Size according to item length and slice width
+        let fontSize = Math.max(12, Math.min(22, Math.floor(320 / Math.max(items.length, 12))));
+        if (items.length > 28) fontSize = 11;
+        ctx.font = `bold ${fontSize}px "Noto Sans KR"`;
+
+        // Text Shadow for contrast
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+
+        // Truncate text if excessively long
+        let text = items[i];
+        if (text.length > 10) {
+          text = text.slice(0, 9) + '…';
+        }
+        ctx.fillText(text, radius - 20, 0);
+
+        ctx.restore();
+        ctx.restore();
+      }
+
+      // Draw Decorative Center Inner Rim
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 0.28, 0, 2 * Math.PI);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Spin Physics and Animation Loop
+    function spinWheel() {
+      if (isSpinning) return;
+      if (items.length < 2) {
+        showToast('최소 2개 이상의 항목이 필요합니다!');
+        return;
+      }
+
+      // Sound activation on user gesture
+      sfx.init();
+
+      isSpinning = true;
+      spinBtn.disabled = true;
+      spinBtn.classList.add('opacity-80', 'scale-95');
+      pointer.classList.add('pointer-active');
+
+      // Random Initial Velocity (Between 0.35 and 0.55 radians per frame)
+      spinVelocity = Math.random() * 0.2 + 0.38;
+      // Damping factor (slowdown rate)
+      const friction = 0.988 + Math.random() * 0.005;
+
+      function animate() {
+        if (!isSpinning) return;
+
+        currentAngle += spinVelocity;
+        currentAngle %= (2 * Math.PI);
+
+        // Check if pointer crossed a slice boundary for sound tick
+        const sliceAngle = (2 * Math.PI) / items.length;
+        // The pointer is at top (-PI/2)
+        const normalizedAngle = (2 * Math.PI - (currentAngle % (2 * Math.PI)) - Math.PI / 2 + 2 * Math.PI) % (2 * Math.PI);
+        const currentSliceIndex = Math.floor(normalizedAngle / sliceAngle) % items.length;
+
+        if (currentSliceIndex !== lastTickIndex) {
+          lastTickIndex = currentSliceIndex;
+          sfx.playTick();
+        }
+
+        // Apply friction
+        spinVelocity *= friction;
+
+        // Draw updated position
+        drawWheel();
+
+        // Check if stopped
+        if (spinVelocity < 0.002) {
+          isSpinning = false;
+          spinBtn.disabled = false;
+          spinBtn.classList.remove('opacity-80', 'scale-95');
+          pointer.classList.remove('pointer-active');
+
+          // Final Winner Calculation
+          finishSpin(currentSliceIndex);
+        } else {
+          requestAnimationFrame(animate);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // Winner Processing
+    function finishSpin(winnerIndex) {
+      const winner = items[winnerIndex];
+      if (!winner) return;
+
+      sfx.playFanfare();
+      triggerFanfareStage();
+      triggerConfetti();
+
+      // Record in history
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+      winnerHistory.unshift({ name: winner, time: timeStr });
+      updateHistoryUI();
+
+      // Display Modal with slight delay to highlight fanfare eruption
+      winnerNameDisplay.textContent = winner;
+      const autoRemove = autoRemoveCheckbox.checked;
+      
+      if (autoRemove) {
+        winnerAutoRemovedNote.classList.remove('hidden');
+        // Remove winner from items
+        items.splice(winnerIndex, 1);
+        updateTextareaFromItems();
+        updateCandidateCounts();
+        drawWheel();
+      } else {
+        winnerAutoRemovedNote.classList.add('hidden');
+      }
+
+      // Show Modal smoothly
+      setTimeout(() => {
+        winnerModal.classList.remove('opacity-0', 'pointer-events-none');
+        modalBox.classList.remove('scale-90');
+        modalBox.classList.add('scale-100');
+      }, 400);
+    }
+
+    const fanfareStage = document.getElementById('fanfareStage');
+    const leftHorn = document.getElementById('leftHorn');
+    const rightHorn = document.getElementById('rightHorn');
+    const fanfareBanner = document.getElementById('fanfareBanner');
+
+    function triggerFanfareStage() {
+      fanfareStage.classList.remove('hidden');
+
+      // Slide and pop horns into view
+      setTimeout(() => {
+        leftHorn.classList.remove('-left-36');
+        leftHorn.classList.add('left-4', 'sm:left-12', 'scale-110');
+        rightHorn.classList.remove('-right-36');
+        rightHorn.classList.add('right-4', 'sm:right-12', 'scale-110');
+
+        fanfareBanner.classList.remove('opacity-0', '-translate-y-12');
+        fanfareBanner.classList.add('opacity-100', 'translate-y-0');
+      }, 50);
+    }
+
+    function resetFanfareStage() {
+      leftHorn.classList.add('-left-36');
+      leftHorn.classList.remove('left-4', 'sm:left-12', 'scale-110');
+      rightHorn.classList.add('-right-36');
+      rightHorn.classList.remove('right-4', 'sm:right-12', 'scale-110');
+
+      fanfareBanner.classList.add('opacity-0', '-translate-y-12');
+      fanfareBanner.classList.remove('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        fanfareStage.classList.add('hidden');
+      }, 500);
+    }
+
+    function closeModal() {
+      winnerModal.classList.add('opacity-0', 'pointer-events-none');
+      modalBox.classList.remove('scale-100');
+      modalBox.classList.add('scale-90');
+      resetFanfareStage();
+      stopConfetti();
+    }
+
+    // Enhanced Multi-Stage Fanfare Particle System
+    const confCanvas = document.getElementById('confettiCanvas');
+    const confCtx = confCanvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnimationId = null;
+
+    function resizeConfetti() {
+      confCanvas.width = window.innerWidth;
+      confCanvas.height = window.innerHeight;
+    }
+
+    function triggerConfetti() {
+      resizeConfetti();
+      confettiParticles = [];
+      const colors = ['#f59e0b', '#ec4899', '#3b82f6', '#10b981', '#fbbf24', '#a855f7', '#ef4444', '#ffffff'];
+      const shapes = ['rect', 'star', 'circle', 'ribbon'];
+
+      // 1. Left Horn Blast Particles (shooting upwards and rightwards)
+      for (let i = 0; i < 90; i++) {
+        const angle = -Math.PI / 4 + (Math.random() - 0.5) * 0.7; // ~45 deg blast
+        const speed = Math.random() * 22 + 12;
+        confettiParticles.push({
+          x: 100,
+          y: confCanvas.height - 120,
+          size: Math.random() * 9 + 4,
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: 0.38,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 16,
+          opacity: 1
+        });
+      }
+
+      // 2. Right Horn Blast Particles (shooting upwards and leftwards)
+      for (let i = 0; i < 90; i++) {
+        const angle = -Math.PI * 0.75 + (Math.random() - 0.5) * 0.7; // ~135 deg blast
+        const speed = Math.random() * 22 + 12;
+        confettiParticles.push({
+          x: confCanvas.width - 100,
+          y: confCanvas.height - 120,
+          size: Math.random() * 9 + 4,
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: 0.38,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 16,
+          opacity: 1
+        });
+      }
+
+      // 3. Center Sky Falling Confetti Rain
+      for (let i = 0; i < 100; i++) {
+        confettiParticles.push({
+          x: Math.random() * confCanvas.width,
+          y: Math.random() * (confCanvas.height * 0.35) - 50,
+          size: Math.random() * 8 + 4,
+          shape: shapes[Math.floor(Math.random() * shapes.length)],
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 6,
+          vy: Math.random() * 5 + 3,
+          gravity: 0.15,
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10,
+          opacity: 1
+        });
+      }
+
+      function updateAndDraw() {
+        confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+        let alive = false;
+
+        for (let p of confettiParticles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.rotation += p.rotationSpeed;
+          p.opacity -= 0.0035;
+
+          if (p.opacity > 0 && p.y < confCanvas.height + 30) {
+            alive = true;
+            confCtx.save();
+            confCtx.translate(p.x, p.y);
+            confCtx.rotate((p.rotation * Math.PI) / 180);
+            confCtx.fillStyle = p.color;
+            confCtx.globalAlpha = Math.max(0, p.opacity);
+
+            if (p.shape === 'circle') {
+              confCtx.beginPath();
+              confCtx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+              confCtx.fill();
+            } else if (p.shape === 'star') {
+              // Draw 4-point star sparkle
+              confCtx.beginPath();
+              confCtx.moveTo(0, -p.size);
+              confCtx.quadraticCurveTo(0, 0, p.size, 0);
+              confCtx.quadraticCurveTo(0, 0, 0, p.size);
+              confCtx.quadraticCurveTo(0, 0, -p.size, 0);
+              confCtx.quadraticCurveTo(0, 0, 0, -p.size);
+              confCtx.fill();
+            } else if (p.shape === 'ribbon') {
+              confCtx.fillRect(-p.size / 2, -p.size, p.size / 2, p.size * 2.2);
+            } else {
+              confCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.5);
+            }
+
+            confCtx.restore();
+          }
+        }
+
+        if (alive) {
+          confettiAnimationId = requestAnimationFrame(updateAndDraw);
+        } else {
+          stopConfetti();
+        }
+      }
+
+      if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+      confettiAnimationId = requestAnimationFrame(updateAndDraw);
+    }
+
+    function stopConfetti() {
+      if (confettiAnimationId) {
+        cancelAnimationFrame(confettiAnimationId);
+        confettiAnimationId = null;
+      }
+      confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+    }
+
+    function updateTextareaFromItems() {
+      itemsInput.value = items.join('\n');
+    }
+
+    function updateCandidateCounts() {
+      candidateCount.textContent = items.length;
+      winnerCount.textContent = winnerHistory.length;
+    }
+
+    function updateHistoryUI() {
+      historyNum.textContent = winnerHistory.length;
+      winnerCount.textContent = winnerHistory.length;
+
+      if (winnerHistory.length === 0) {
+        historyList.innerHTML = `<div class="text-slate-500 text-center py-4 italic">아직 당첨된 학생이 없습니다.</div>`;
+        return;
+      }
+
+      historyList.innerHTML = winnerHistory.map((item, idx) => `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-700/60">
+          <div class="flex items-center space-x-2">
+            <span class="w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-[10px]">
+              ${winnerHistory.length - idx}
+            </span>
+            <span class="font-bold text-slate-200">${escapeHtml(item.name)}</span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono">${item.time}</span>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toastBox.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toastBox.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    // Event Listeners
+    spinBtn.addEventListener('click', spinWheel);
+    canvas.addEventListener('click', spinWheel);
+    modalCloseBtn.addEventListener('click', closeModal);
+    winnerModal.addEventListener('click', (e) => {
+      if (e.target === winnerModal) closeModal();
+    });
+
+    // Spacebar to trigger spin or close modal
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+        e.preventDefault();
+        if (!winnerModal.classList.contains('pointer-events-none')) {
+          closeModal();
+        } else {
+          spinWheel();
+        }
+      } else if (e.code === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // Apply Items Button
+    applyItemsBtn.addEventListener('click', () => {
+      const rawText = itemsInput.value;
+      const parsed = rawText
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      if (parsed.length === 0) {
+        showToast('적어도 한 명 이상의 이름을 입력해주세요!');
+        return;
+      }
+
+      items = parsed;
+      updateCandidateCounts();
+      drawWheel();
+      showToast(`${items.length}개의 항목이 적용되었습니다!`);
+    });
+
+    // Preset Selection
+    presetSelect.addEventListener('change', (e) => {
+      const key = e.target.value;
+      if (PRESETS[key]) {
+        items = [...PRESETS[key]];
+        updateTextareaFromItems();
+        updateCandidateCounts();
+        drawWheel();
+        showToast('프리셋 목록이 로드되었습니다.');
+      }
+    });
+
+    // Shuffle Button
+    shuffleBtn.addEventListener('click', () => {
+      if (isSpinning) return;
+      if (items.length <= 1) return;
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      updateTextareaFromItems();
+      drawWheel();
+      showToast('후보 순서를 무작위로 섞었습니다!');
+    });
+
+    // Reset History
+    resetHistoryBtn.addEventListener('click', () => {
+      if (winnerHistory.length === 0) return;
+      winnerHistory = [];
+      updateHistoryUI();
+      showToast('당첨 기록이 초기화되었습니다.');
+    });
+
+    clearHistoryBtn.addEventListener('click', () => {
+      winnerHistory = [];
+      updateHistoryUI();
+      showToast('기록이 삭제되었습니다.');
+    });
+
+    // Sound Toggle
+    soundToggleBtn.addEventListener('click', () => {
+      sfx.enabled = !sfx.enabled;
+      if (sfx.enabled) {
+        soundIcon.className = 'fa-solid fa-volume-high text-amber-400';
+        showToast('효과음이 켜졌습니다.');
+      } else {
+        soundIcon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        showToast('효과음이 꺼졌습니다.');
+      }
+    });
+
+    // Fullscreen Toggle
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Mobile Panel Toggle
+    const panelToggleBtn = document.getElementById('panelToggleBtn');
+    const sidebarPanel = document.getElementById('sidebarPanel');
+    panelToggleBtn.addEventListener('click', () => {
+      sidebarPanel.classList.toggle('hidden');
+      if (!sidebarPanel.classList.contains('hidden')) {
+        sidebarPanel.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    // Window Resize Handlers
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      resizeConfetti();
+    });
+
+    // Initial Setup
+    window.onload = () => {
+      updateTextareaFromItems();
+      updateCandidateCounts();
+      resizeCanvas();
+      resizeConfetti();
+    };
+  </script>
+</body>
+</html>
